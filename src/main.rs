@@ -42,9 +42,9 @@ enum Commands {
         #[arg(long)]
         latex_font: bool,
 
-        /// Enable advanced code block styling
+        /// Disable advanced code block styling (enabled by default)
         #[arg(long)]
-        pretty_code: bool,
+        no_pretty_code: bool,
 
         /// Override custom variables (e.g., -V cols=2)
         #[arg(short = 'V', long = "variable")]
@@ -56,8 +56,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Convert { input, output, density, two_cols, latex_font, no_alt_table, table_dims, pretty_code, variables } => {
+        Commands::Convert { input, output, density, two_cols, latex_font, no_alt_table, table_dims, no_pretty_code, variables } => {
             let mut profile = Profile::new();
+
+            // Set global defaults (grid, breakable blocks, etc.)
+            profile.set_global_defaults();
 
             // Set density settings
             profile.set_density(density);
@@ -85,8 +88,8 @@ fn main() -> Result<()> {
                 profile.use_lua_table_filter = false;
             }
 
-            // Apply pretty-code modifier if flag is set
-            if *pretty_code {
+            // Apply pretty-code modifier unless disabled
+            if !*no_pretty_code {
                 profile.set_pretty_code();
             }
 

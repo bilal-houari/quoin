@@ -32,8 +32,10 @@ fn test_all_styles_and_generate_outputs() {
                 println!("  Applying style: {}", style);
 
                 let mut profile = Profile::new();
+                profile.set_global_defaults();
                 profile.set_density(style);
                 profile.set_alt_table(); // Default in CLI
+                profile.set_pretty_code(); // Default in CLI
 
                 // Generate PDF
                 let pdf_output = format!("{}/{}_{}.pdf", output_dir, base_name, style);
@@ -51,6 +53,7 @@ fn test_all_styles_and_generate_outputs() {
 
             // Test modifier combination: ultra-dense + 2cols + pretty-code + latex-font + alt-table
             let mut profile = Profile::new();
+            profile.set_global_defaults();
             profile.set_density("ultra-dense");
             profile.set_two_cols(true);
             profile.set_pretty_code();
@@ -69,12 +72,13 @@ fn test_all_styles_and_generate_outputs() {
             assert!(Path::new(&pdf_output).exists());
             assert!(Path::new(&typ_output).exists());
 
-            // Test disabling modifiers: comfort + no-alt-table + table-dims
+            // Test disabling modifiers: comfort + no-alt-table + no-pretty-code + table-dims
             let mut profile = Profile::new();
+            profile.set_global_defaults();
             profile.set_density("comfort");
             profile.use_lua_table_filter = false;
-            // No set_alt_table call here
-            let disable_name = "comfort_no-alt_dims";
+            // No set_alt_table or set_pretty_code calls here
+            let disable_name = "comfort_no-alt_dims_no-pretty";
             
             let typ_output = format!("{}/{}_{}.typ", output_dir, base_name, disable_name);
             PandocWrapper::convert(&profile, path.to_str().unwrap(), &typ_output)
@@ -82,6 +86,7 @@ fn test_all_styles_and_generate_outputs() {
             
             let typ_content = fs::read_to_string(&typ_output).unwrap();
             assert!(!typ_content.contains("set table(stroke"));
+            assert!(!typ_content.contains("show raw.where(block: false)"));
         }
     }
 }

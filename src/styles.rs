@@ -60,6 +60,17 @@ impl Profile {
         self.variables.insert("mainfont".to_string(), "New Computer Modern".to_string());
     }
 
+    pub fn set_global_defaults(&mut self) {
+        let defaults = r####"
+#set grid(gutter: 1em)
+#show table: text.with(size: 0.9em)
+#show figure: set block(breakable: true)
+#show math.equation.where(block: true): set block(breakable: true)
+"####;
+        let current = self.variables.get("header-includes").cloned().unwrap_or_default();
+        self.variables.insert("header-includes".to_string(), format!("{}\n{}", current, defaults));
+    }
+
     pub fn set_alt_table(&mut self) {
         let table_style = r####"
 #set table(stroke: 0.5pt + rgb("#888888"), inset: 0.5em)
@@ -78,7 +89,7 @@ impl Profile {
 #show raw.where(block: true): it => {
   set text(size: 0.9em)
   align(center)[
-    #block(fill: luma(250), inset: 1em, radius: 8pt)[#it]
+    #block(fill: luma(250), inset: 1em, radius: 5pt, stroke: luma(220))[#it]
   ]
 }
 "####;
