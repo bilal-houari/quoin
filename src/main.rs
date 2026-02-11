@@ -1,10 +1,7 @@
-mod styles;
-mod pandoc;
-
-use clap::{Parser, Subcommand};
 use anyhow::Result;
-use styles::Profile;
-use pandoc::PandocWrapper;
+use clap::{Parser, Subcommand};
+use quoin::pandoc::PandocWrapper;
+use quoin::styles::Profile;
 
 #[derive(Parser)]
 #[command(name = "quoin")]
@@ -25,9 +22,13 @@ enum Commands {
         #[arg(short, long, default_value = "output.pdf")]
         output: String,
 
-        /// Style preset to use (academic, technical, manuscript, report, memo, letter)
+        /// Style preset to use (ultra-dense, dense, standard, comfort, etc.)
         #[arg(short, long)]
-        style: Option<String>,
+        styles: Vec<String>,
+
+        /// Enable advanced code block styling
+        #[arg(long)]
+        pretty_code: bool,
 
         /// Override custom variables (e.g., -V cols=2)
         #[arg(short = 'V', long = "variable")]
@@ -39,12 +40,17 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Convert { input, output, style, variables } => {
+        Commands::Convert { input, output, styles, pretty_code, variables } => {
             let mut profile = Profile::new();
 
-            // Apply style preset if provided
-            if let Some(style_name) = style {
+            // Apply style presets if provided
+            for style_name in styles {
                 profile.apply_preset(style_name);
+            }
+
+            // Apply pretty-code modifier if flag is set
+            if *pretty_code {
+                profile.set_pretty_code();
             }
 
             // Apply custom variable overrides
