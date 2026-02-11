@@ -45,8 +45,24 @@ impl PandocWrapper {
         // Create temporary metadata JSON file
         let metadata_path = format!("{}_metadata.json", actual_output);
         let header_path = format!("{}_header.typ", actual_output);
+        let lua_path = format!("{}_table.lua", actual_output);
         let mut has_header = false;
         
+        if profile.use_lua_table_filter {
+            let lua_content = r#"
+function Table(el)
+  local new_colspecs = {}
+  for _, spec in ipairs(el.colspecs) do
+    table.insert(new_colspecs, {spec[1], nil})
+  end
+  el.colspecs = new_colspecs
+  return el
+end
+"#;
+            std::fs::write(&lua_path, lua_content)?;
+            cmd.arg("--lua-filter").arg(&lua_path);
+        }
+
         let mut metadata_map = serde_json::Map::new();
         for (key, value) in &profile.variables {
             if key == "header-includes" {
@@ -95,6 +111,9 @@ impl PandocWrapper {
         let _ = std::fs::remove_file(&metadata_path);
         if has_header {
             let _ = std::fs::remove_file(&header_path);
+        }
+        if profile.use_lua_table_filter {
+            let _ = std::fs::remove_file(&lua_path);
         }
 
         if !status.success() {

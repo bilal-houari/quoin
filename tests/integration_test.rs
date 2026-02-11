@@ -9,9 +9,7 @@ fn test_all_styles_and_generate_outputs() {
     let output_dir = "test_output";
     let styles = vec![
         "ultra-dense",
-        "ultra-dense-2col",
         "dense",
-        "dense-2col",
         "standard",
         "comfort",
     ];
@@ -34,7 +32,8 @@ fn test_all_styles_and_generate_outputs() {
                 println!("  Applying style: {}", style);
 
                 let mut profile = Profile::new();
-                profile.apply_preset(style);
+                profile.set_density(style);
+                profile.set_alt_table(); // Default in CLI
 
                 // Generate PDF
                 let pdf_output = format!("{}/{}_{}.pdf", output_dir, base_name, style);
@@ -50,11 +49,14 @@ fn test_all_styles_and_generate_outputs() {
                 assert!(Path::new(&typ_output).exists());
             }
 
-            // Test modifier: comfort + pretty-code
+            // Test modifier combination: ultra-dense + 2cols + pretty-code + latex-font + alt-table
             let mut profile = Profile::new();
-            profile.apply_preset("comfort");
+            profile.set_density("ultra-dense");
+            profile.set_two_cols(true);
             profile.set_pretty_code();
-            let comb_name = "comfort_pretty-code";
+            profile.set_latex_font();
+            profile.set_alt_table();
+            let comb_name = "ultra-dense_2col_pretty_latex_table";
             
             let pdf_output = format!("{}/{}_{}.pdf", output_dir, base_name, comb_name);
             PandocWrapper::convert(&profile, path.to_str().unwrap(), &pdf_output)
@@ -66,6 +68,20 @@ fn test_all_styles_and_generate_outputs() {
 
             assert!(Path::new(&pdf_output).exists());
             assert!(Path::new(&typ_output).exists());
+
+            // Test disabling modifiers: comfort + no-alt-table + table-dims
+            let mut profile = Profile::new();
+            profile.set_density("comfort");
+            profile.use_lua_table_filter = false;
+            // No set_alt_table call here
+            let disable_name = "comfort_no-alt_dims";
+            
+            let typ_output = format!("{}/{}_{}.typ", output_dir, base_name, disable_name);
+            PandocWrapper::convert(&profile, path.to_str().unwrap(), &typ_output)
+                .expect("Failed to generate Typst for disabled modifiers");
+            
+            let typ_content = fs::read_to_string(&typ_output).unwrap();
+            assert!(!typ_content.contains("set table(stroke"));
         }
     }
 }

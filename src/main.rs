@@ -22,9 +22,25 @@ enum Commands {
         #[arg(short, long, default_value = "output.pdf")]
         output: String,
 
-        /// Style preset to use (ultra-dense, dense, standard, comfort, etc.)
-        #[arg(short, long)]
-        styles: Vec<String>,
+        /// Density preset to use (ultra-dense, dense, standard, comfort)
+        #[arg(short, long, default_value = "standard")]
+        density: String,
+
+        /// Enable 2-column layout
+        #[arg(long)]
+        two_cols: bool,
+
+        /// Disable alternative table styling (enabled by default)
+        #[arg(long)]
+        no_alt_table: bool,
+
+        /// Restore default Pandoc table dimensions (overrides custom filter)
+        #[arg(long)]
+        table_dims: bool,
+
+        /// Enable "New Computer Modern" LaTeX-style font
+        #[arg(long)]
+        latex_font: bool,
 
         /// Enable advanced code block styling
         #[arg(long)]
@@ -40,12 +56,33 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Convert { input, output, styles, pretty_code, variables } => {
+        Commands::Convert { input, output, density, two_cols, latex_font, no_alt_table, table_dims, pretty_code, variables } => {
             let mut profile = Profile::new();
 
-            // Apply style presets if provided
-            for style_name in styles {
-                profile.apply_preset(style_name);
+            // Set density settings
+            profile.set_density(density);
+
+            // Set column count
+            profile.set_two_cols(*two_cols);
+
+            // Warning 2-column layouts
+            if *two_cols {
+                eprintln!("Warning: Using 2 columns may cause text collisions.");
+            }
+
+            // Apply LaTeX-style font if requested
+            if *latex_font {
+                profile.set_latex_font();
+            }
+
+            // Apply alternative table styling unless disabled
+            if !*no_alt_table {
+                profile.set_alt_table();
+            }
+
+            // Disable Lua table filter if table-dims is requested
+            if *table_dims {
+                profile.use_lua_table_filter = false;
             }
 
             // Apply pretty-code modifier if flag is set
