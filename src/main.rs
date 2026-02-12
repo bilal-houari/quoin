@@ -22,9 +22,21 @@ enum Commands {
         #[arg(short, long, default_value = "output.pdf")]
         output: String,
 
-        /// Density preset to use (ultra-dense, dense, standard, comfort)
-        #[arg(short, long, default_value = "standard")]
-        density: String,
+        /// Use ultra-dense layout (8pt font, 2cm margins)
+        #[arg(long, group = "density_level")]
+        ultra_dense: bool,
+
+        /// Use dense layout (10pt font, 2cm margins)
+        #[arg(long, group = "density_level")]
+        dense: bool,
+
+        /// Use standard layout (10pt font, 2.5cm/3cm margins) [default]
+        #[arg(long, group = "density_level")]
+        standard: bool,
+
+        /// Use comfort layout (12pt font, 2.5cm/3cm margins)
+        #[arg(long, group = "density_level")]
+        comfort: bool,
 
         /// Enable 2-column layout
         #[arg(long)]
@@ -56,11 +68,35 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Convert { input, output, density, two_cols, latex_font, no_alt_table, table_dims, no_pretty_code, variables } => {
+        Commands::Convert { 
+            input, 
+            output, 
+            ultra_dense, 
+            dense, 
+            standard: _standard, 
+            comfort, 
+            two_cols, 
+            latex_font, 
+            no_alt_table, 
+            table_dims, 
+            no_pretty_code, 
+            variables 
+        } => {
             let mut profile = Profile::new();
 
             // Set global defaults (grid, breakable blocks, etc.)
             profile.set_global_defaults();
+
+            // Determine density (default to standard)
+            let density = if *ultra_dense {
+                "ultra-dense"
+            } else if *dense {
+                "dense"
+            } else if *comfort {
+                "comfort"
+            } else {
+                "standard"
+            };
 
             // Set density settings
             profile.set_density(density);

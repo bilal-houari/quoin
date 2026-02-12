@@ -97,7 +97,4 @@ As noted by Thorne, the primary risk of low-bit quantization is gradient instabi
 
 This research demonstrates that Stochastic Quantization provides a robust middle ground for deploying high-performance AI on the edge. By leveraging the probabilistic nature of weight rounding, we maintain high accuracy while drastically reducing the hardware footprint.
 
-***
-
-### Footnotes
 [^1]: NEON is the SIMD (Single Instruction Multiple Data) architecture extension for the ARM Cortex-A series.
