@@ -42,56 +42,27 @@ impl PandocWrapper {
             cmd.arg("--pdf-engine=typst");
         }
 
-        // Create temporary metadata JSON file
-        let metadata_path = format!("{}_metadata.json", actual_output);
+        // Create temporary metadata YAML file
+        let metadata_path = format!("{}_metadata.yaml", actual_output);
         let header_path = format!("{}_header.typ", actual_output);
         let lua_path = format!("{}_table.lua", actual_output);
-        let mut has_header = false;
         
+        // Write Lua filter
         if profile.use_lua_table_filter {
-            let lua_content = r#"
-function Table(el)
-  local new_colspecs = {}
-  for _, spec in ipairs(el.colspecs) do
-    table.insert(new_colspecs, {spec[1], nil})
-  end
-  el.colspecs = new_colspecs
-  return el
-end
-"#;
+            let lua_content = include_str!("assets/lua/table_dimensions.lua");
             std::fs::write(&lua_path, lua_content)?;
             cmd.arg("--lua-filter").arg(&lua_path);
         }
 
-        let mut metadata_map = serde_json::Map::new();
-        for (key, value) in &profile.variables {
-            if key == "header-includes" {
-                std::fs::write(&header_path, value)?;
-                has_header = true;
-                continue;
-            }
-
-            // Check for nested keys (e.g. margin.x)
-            if key.contains('.') {
-                let parts: Vec<&str> = key.split('.').collect();
-                let parent = parts[0];
-                let child = parts[1];
-                
-                let entry = metadata_map.entry(parent.to_string())
-                    .or_insert(serde_json::Value::Object(serde_json::Map::new()));
-                
-                if let serde_json::Value::Object(map) = entry {
-                    map.insert(child.to_string(), serde_json::Value::String(value.clone()));
-                }
-            } else {
-                metadata_map.insert(key.clone(), serde_json::Value::String(value.clone()));
-            }
-        }
-        let metadata_json = serde_json::Value::Object(metadata_map);
-        std::fs::write(&metadata_path, serde_json::to_string_pretty(&metadata_json)?)?;
-        
+        // Serialize metadata to YAML
+        let yaml_content = serde_yaml::to_string(&profile.metadata)?;
+        std::fs::write(&metadata_path, yaml_content)?;
         cmd.arg("--metadata-file").arg(&metadata_path);
-        if has_header {
+
+        // Write header includes to a separate file to prevent escaping
+        if !profile.header_includes.is_empty() {
+            let header_content = profile.header_includes.join("\n");
+            std::fs::write(&header_path, header_content)?;
             cmd.arg("--include-in-header").arg(&header_path);
         }
 
@@ -109,9 +80,7 @@ end
         
         // Cleanup temporary files
         let _ = std::fs::remove_file(&metadata_path);
-        if has_header {
-            let _ = std::fs::remove_file(&header_path);
-        }
+        let _ = std::fs::remove_file(&header_path);
         if profile.use_lua_table_filter {
             let _ = std::fs::remove_file(&lua_path);
         }

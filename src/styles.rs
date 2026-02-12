@@ -1,21 +1,49 @@
 use std::collections::HashMap;
+use serde::Serialize;
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+pub struct Margin {
+    pub x: String,
+    pub y: String,
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+pub struct Metadata {
+    pub fontsize: String,
+    pub lang: String,
+    pub papersize: String,
+    pub margin: Margin,
+    pub columns: u8,
+    pub mainfont: Option<String>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, String>,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Profile {
-    pub variables: HashMap<String, String>,
+    pub metadata: Metadata,
+    pub header_includes: Vec<String>,
     pub use_lua_table_filter: bool,
 }
 
 impl Profile {
     pub fn new() -> Self {
-        let mut variables = HashMap::new();
-        // Global defaults
-        variables.insert("fontsize".to_string(), "10pt".to_string());
-        variables.insert("lang".to_string(), "en".to_string());
-        variables.insert("papersize".to_string(), "a4".to_string());
+        let metadata = Metadata {
+            fontsize: "10pt".to_string(),
+            lang: "en".to_string(),
+            papersize: "a4".to_string(),
+            margin: Margin {
+                x: "2.5cm".to_string(),
+                y: "3cm".to_string(),
+            },
+            columns: 1,
+            mainfont: None,
+            extra: HashMap::new(),
+        };
 
         Self { 
-            variables,
+            metadata,
+            header_includes: Vec::new(),
             use_lua_table_filter: true,
         }
     }
@@ -23,81 +51,70 @@ impl Profile {
     pub fn set_density(&mut self, density: &str) {
         match density.to_lowercase().as_str() {
             "ultra-dense" => {
-                self.variables.insert("fontsize".to_string(), "8pt".to_string());
-                self.variables.insert("margin.x".to_string(), "2cm".to_string());
-                self.variables.insert("margin.y".to_string(), "2cm".to_string());
+                self.metadata.fontsize = "8pt".to_string();
+                self.metadata.margin.x = "2cm".to_string();
+                self.metadata.margin.y = "2cm".to_string();
             }
             "dense" => {
-                self.variables.insert("fontsize".to_string(), "10pt".to_string());
-                self.variables.insert("margin.x".to_string(), "2cm".to_string());
-                self.variables.insert("margin.y".to_string(), "2cm".to_string());
+                self.metadata.fontsize = "10pt".to_string();
+                self.metadata.margin.x = "2cm".to_string();
+                self.metadata.margin.y = "2cm".to_string();
             }
             "standard" => {
-                self.variables.insert("fontsize".to_string(), "10pt".to_string());
-                self.variables.insert("margin.x".to_string(), "2.5cm".to_string());
-                self.variables.insert("margin.y".to_string(), "3cm".to_string());
+                self.metadata.fontsize = "10pt".to_string();
+                self.metadata.margin.x = "2.5cm".to_string();
+                self.metadata.margin.y = "3cm".to_string();
             }
             "comfort" => {
-                self.variables.insert("fontsize".to_string(), "12pt".to_string());
-                self.variables.insert("margin.x".to_string(), "2.5cm".to_string());
-                self.variables.insert("margin.y".to_string(), "3cm".to_string());
+                self.metadata.fontsize = "12pt".to_string();
+                self.metadata.margin.x = "2.5cm".to_string();
+                self.metadata.margin.y = "3cm".to_string();
             }
             _ => {
                 // Default to standard if not matched
-                self.variables.insert("fontsize".to_string(), "10pt".to_string());
-                self.variables.insert("margin.x".to_string(), "2.5cm".to_string());
-                self.variables.insert("margin.y".to_string(), "3cm".to_string());
+                self.metadata.fontsize = "10pt".to_string();
+                self.metadata.margin.x = "2.5cm".to_string();
+                self.metadata.margin.y = "3cm".to_string();
             }
         }
     }
 
     pub fn set_two_cols(&mut self, enabled: bool) {
-        let cols = if enabled { "2" } else { "1" };
-        self.variables.insert("columns".to_string(), cols.to_string());
+        self.metadata.columns = if enabled { 2 } else { 1 };
     }
 
     pub fn set_latex_font(&mut self) {
-        self.variables.insert("mainfont".to_string(), "New Computer Modern".to_string());
+        self.metadata.mainfont = Some("New Computer Modern".to_string());
     }
 
     pub fn set_global_defaults(&mut self) {
-        let defaults = r####"
-#set grid(gutter: 1em)
-#show table: text.with(size: 0.9em)
-#show figure: set block(breakable: true)
-#show math.equation.where(block: true): set block(breakable: true)
-"####;
-        let current = self.variables.get("header-includes").cloned().unwrap_or_default();
-        self.variables.insert("header-includes".to_string(), format!("{}\n{}", current, defaults));
+        let defaults = include_str!("assets/typst/defaults.typ");
+        self.header_includes.push(defaults.to_string());
     }
 
     pub fn set_alt_table(&mut self) {
-        let table_style = r####"
-#set table(stroke: 0.5pt + rgb("#888888"), inset: 0.5em)
-#set table(
-  fill: (_, y) => if y == 0 { rgb("#e4e4e4") },
-)
-"####;
-        let current = self.variables.get("header-includes").cloned().unwrap_or_default();
-        self.variables.insert("header-includes".to_string(), format!("{}\n{}", current, table_style));
+        let table_style = include_str!("assets/typst/alt_table.typ");
+        self.header_includes.push(table_style.to_string());
     }
 
     pub fn set_pretty_code(&mut self) {
-        let code_style = r####"
-#show raw.where(block: false): box.with(fill: luma(240), inset: (x: 3pt), outset: (y: 3pt), radius: 3pt)
-
-#show raw.where(block: true): it => {
-  set text(size: 0.9em)
-  align(center)[
-    #block(fill: luma(250), inset: 1em, radius: 5pt, stroke: luma(220))[#it]
-  ]
-}
-"####;
-        let current = self.variables.get("header-includes").cloned().unwrap_or_default();
-        self.variables.insert("header-includes".to_string(), format!("{}\n{}", current, code_style));
+        let code_style = include_str!("assets/typst/pretty_code.typ");
+        self.header_includes.push(code_style.to_string());
     }
 
     pub fn override_variable(&mut self, key: &str, value: &str) {
-        self.variables.insert(key.to_string(), value.to_string());
+        // Attempt to set structured fields first
+        match key {
+            "fontsize" => self.metadata.fontsize = value.to_string(),
+            "lang" => self.metadata.lang = value.to_string(),
+            "papersize" => self.metadata.papersize = value.to_string(),
+            "margin.x" => self.metadata.margin.x = value.to_string(),
+            "margin.y" => self.metadata.margin.y = value.to_string(),
+            "columns" => if let Ok(n) = value.parse() { self.metadata.columns = n },
+            "mainfont" => self.metadata.mainfont = Some(value.to_string()),
+            _ => {
+                self.metadata.extra.insert(key.to_string(), value.to_string());
+            }
+        }
     }
 }

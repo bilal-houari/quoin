@@ -1,0 +1,4 @@
+#set grid(gutter: 1em)
+#show table: text.with(size: 0.9em)
+#show figure: set block(breakable: true)
+#show math.equation.where(block: true): set block(breakable: true)
