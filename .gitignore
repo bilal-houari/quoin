@@ -1,6 +1,7 @@
 /target
 *.pdf
 *.typ
+/test_output
 
 # Un-ignore .typ files in src/assets/
 !src/assets/**/*.typ

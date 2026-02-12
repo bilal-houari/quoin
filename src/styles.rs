@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::Serialize;
+use serde_yaml::{Mapping, Value};
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Margin {
@@ -16,7 +16,7 @@ pub struct Metadata {
     pub columns: u8,
     pub mainfont: Option<String>,
     #[serde(flatten)]
-    pub extra: HashMap<String, String>,
+    pub extra: Mapping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -38,7 +38,7 @@ impl Profile {
             },
             columns: 1,
             mainfont: None,
-            extra: HashMap::new(),
+            extra: Mapping::new(),
         };
 
         Self { 
@@ -113,7 +113,22 @@ impl Profile {
             "columns" => if let Ok(n) = value.parse() { self.metadata.columns = n },
             "mainfont" => self.metadata.mainfont = Some(value.to_string()),
             _ => {
-                self.metadata.extra.insert(key.to_string(), value.to_string());
+                // Support dotted keys for nesting in extra
+                let parts: Vec<&str> = key.split('.').collect();
+                let mut current = &mut self.metadata.extra;
+                
+                for i in 0..parts.len() {
+                    let k = Value::String(parts[i].to_string());
+                    if i == parts.len() - 1 {
+                        current.insert(k, Value::String(value.to_string()));
+                    } else {
+                        if !current.contains_key(&k) || !current.get(&k).unwrap().is_mapping() {
+                            current.insert(k.clone(), Value::Mapping(Mapping::new()));
+                        }
+                        // Re-fetch to satisfy borrow checker
+                        current = current.get_mut(&k).unwrap().as_mapping_mut().unwrap();
+                    }
+                }
             }
         }
     }

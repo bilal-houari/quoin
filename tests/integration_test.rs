@@ -89,4 +89,19 @@ fn test_all_styles_and_generate_outputs() {
             assert!(!typ_content.contains("show raw.where(block: false)"));
         }
     }
+
+    // Explicit test for YAML header overrides
+    let sample_path = "tests/samples/override.md";
+    let output_dir = "test_output";
+    let typ_output = format!("{}/override_test.typ", output_dir);
+    
+    let mut profile = Profile::new();
+    profile.metadata.lang = "en".to_string(); // Profile says English
+    
+    PandocWrapper::convert(&profile, sample_path, &typ_output).expect("Failed override test conversion");
+    
+    let content = fs::read_to_string(&typ_output).unwrap();
+    // In override.md, we set lang: fr. It should override the Profile's "en".
+    // We check that the CALL to conf has the correct values.
+    assert!(content.contains("lang: \"fr\""));
 }
