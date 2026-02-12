@@ -2,6 +2,7 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use quoin::pandoc::PandocWrapper;
 use quoin::styles::Profile;
+use quoin::server::start_server;
 
 #[derive(Parser)]
 #[command(name = "quoin")]
@@ -62,9 +63,16 @@ enum Commands {
         #[arg(short = 'V', long = "variable")]
         variables: Vec<String>,
     },
+    /// Starts a local web server for live preview
+    Server {
+        /// Port to listen on
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -141,6 +149,9 @@ fn main() -> Result<()> {
 
             // Execute conversion
             PandocWrapper::convert(&profile, input, output)?;
+        }
+        Commands::Server { port } => {
+            start_server(*port).await?;
         }
     }
 

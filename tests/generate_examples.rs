@@ -18,8 +18,8 @@ fn generate_showcase_examples() {
         profile.set_alt_table();
         profile.set_pretty_code();
         
-        PandocWrapper::convert(&profile, sample_path, &format!("{}/advanced_standard.pdf", output_dir)).unwrap();
-        PandocWrapper::convert(&profile, sample_path, &format!("{}/advanced_standard.typ", output_dir)).unwrap();
+        PandocWrapper::convert(&profile, sample_path, &format!("{}/standard.pdf", output_dir)).unwrap();
+        PandocWrapper::convert(&profile, sample_path, &format!("{}/standard.typ", output_dir)).unwrap();
     }
 
     // 2. Ultra-Dense
@@ -30,7 +30,7 @@ fn generate_showcase_examples() {
         profile.set_alt_table();
         profile.set_pretty_code();
         
-        PandocWrapper::convert(&profile, sample_path, &format!("{}/advanced_ultra_dense.pdf", output_dir)).unwrap();
+        PandocWrapper::convert(&profile, sample_path, &format!("{}/ultra_dense.pdf", output_dir)).unwrap();
     }
 
     // 3. Two Columns
@@ -41,7 +41,7 @@ fn generate_showcase_examples() {
         profile.set_alt_table();
         profile.set_pretty_code();
         
-        PandocWrapper::convert(&profile, sample_path, &format!("{}/advanced_two_columns.pdf", output_dir)).unwrap();
+        PandocWrapper::convert(&profile, sample_path, &format!("{}/two_columns.pdf", output_dir)).unwrap();
     }
 
     // 4. LaTeX Font (New Computer Modern)
@@ -52,6 +52,6 @@ fn generate_showcase_examples() {
         profile.set_alt_table();
         profile.set_pretty_code();
         
-        PandocWrapper::convert(&profile, sample_path, &format!("{}/advanced_latex_font.pdf", output_dir)).unwrap();
+        PandocWrapper::convert(&profile, sample_path, &format!("{}/latex_font.pdf", output_dir)).unwrap();
     }
 }

@@ -1,0 +1,125 @@
+use axum::{
+    extract::Json,
+    http::{header, StatusCode, Uri},
+    response::{Html, IntoResponse, Response},
+    routing::{get, post},
+    Router,
+};
+use rust_embed::RustEmbed;
+use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
+use tempfile::Builder;
+use tower_http::cors::CorsLayer;
+
+use crate::pandoc::PandocWrapper;
+use crate::styles::Profile;
+
+#[derive(RustEmbed)]
+#[folder = "web/dist/"]
+struct Assets;
+
+#[derive(Deserialize)]
+pub struct ConvertRequest {
+    pub markdown: String,
+    pub density: Option<String>,
+    pub two_cols: Option<bool>,
+    pub latex_font: Option<bool>,
+    pub alt_table: Option<bool>,
+    pub pretty_code: Option<bool>,
+}
+
+#[derive(Serialize)]
+pub struct ConvertResponse {
+    pub pdf_base64: String,
+}
+
+pub async fn start_server(port: u16) -> anyhow::Result<()> {
+    let app = Router::new()
+        .route("/api/convert", post(handle_convert))
+        .route("/api/health", get(|| async { "OK" }))
+        .fallback(static_handler)
+        .layer(CorsLayer::permissive());
+
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    println!("Quoin server starting on http://{}", addr);
+    
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    axum::serve(listener, app).await?;
+    
+    Ok(())
+}
+
+async fn handle_convert(Json(payload): Json<ConvertRequest>) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let mut profile = Profile::new();
+    profile.set_global_defaults();
+    
+    if let Some(density) = payload.density {
+        profile.set_density(&density);
+    }
+    if let Some(true) = payload.two_cols {
+        profile.set_two_cols(true);
+    }
+    if let Some(true) = payload.latex_font {
+        profile.set_latex_font();
+    }
+    if let Some(true) = payload.alt_table {
+        profile.set_alt_table();
+    }
+    if let Some(true) = payload.pretty_code {
+        profile.set_pretty_code();
+    }
+
+    // Create a temporary directory for conversion
+    let tmp_dir = Builder::new().prefix("quoin-web-").tempdir()
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    
+    let input_path = tmp_dir.path().join("input.md");
+    let output_path = tmp_dir.path().join("output.pdf");
+
+    std::fs::write(&input_path, payload.markdown)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    PandocWrapper::convert(&profile, input_path.to_str().unwrap(), output_path.to_str().unwrap())
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    let pdf_bytes = std::fs::read(&output_path)
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // Return PDF as base64 or bytes. For a preview, bytes with correct content type is better.
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, "application/pdf")
+        .body(axum::body::Body::from(pdf_bytes))
+        .unwrap())
+}
+
+async fn static_handler(uri: Uri) -> impl IntoResponse {
+    let path = uri.path().trim_start_matches('/');
+
+    if path.is_empty() || path == "index.html" {
+        return index_html().await;
+    }
+
+    match Assets::get(path) {
+        Some(content) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            Response::builder()
+                .header(header::CONTENT_TYPE, mime.as_ref())
+                .body(axum::body::Body::from(content.data))
+                .unwrap()
+        }
+        None => {
+            if path.contains('.') {
+                StatusCode::NOT_FOUND.into_response()
+            } else {
+                index_html().await
+            }
+        }
+    }
+}
+
+async fn index_html() -> Response {
+    match Assets::get("index.html") {
+        Some(content) => Html(content.data).into_response(),
+        None => (StatusCode::NOT_FOUND, "Index file not found").into_response(),
+    }
+}
