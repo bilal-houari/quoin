@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use quoin::pandoc::PandocWrapper;
 use quoin::server::start_server;
 use quoin::styles::Profile;
+use std::path::Path;
 
 #[derive(Parser)]
 #[command(name = "quoin")]
@@ -28,9 +29,11 @@ enum Commands {
         #[arg(display_order = 1)]
         input: String,
 
-        /// Output file path (use '-' for stdout)
-        #[arg(short, long, default_value = "output.pdf", display_order = 2)]
-        output: String,
+        /// Output file path or directory (use '-' for stdout).
+        /// If not provided, defaults to <input_name>.pdf/typ.
+        /// If a directory is provided, output is <directory>/<input_name>.pdf/typ.
+        #[arg(short, long, display_order = 2)]
+        output: Option<String>,
 
         // --- Layout Group ---
         /// Use ultra-dense layout (8pt font, 2cm margins). Ideal for cheat sheets.
@@ -207,26 +210,56 @@ async fn main() -> Result<()> {
                 }
             }
 
+            // Helper to get output filename from input
+            let get_input_stem = |input: &str| -> String {
+                if input == "-" {
+                    "output".to_string()
+                } else {
+                    Path::new(input)
+                        .file_stem()
+                        .and_then(|s| s.to_str())
+                        .unwrap_or("output")
+                        .to_string()
+                }
+            };
+
+            let resolve_output = |output: Option<&String>, input: &str, ext: &str| -> String {
+                match output {
+                    None => {
+                        format!("{}.{}", get_input_stem(input), ext)
+                    }
+                    Some(out) if out == "-" => "-".to_string(),
+                    Some(out) => {
+                        let path = Path::new(out);
+                        if path.is_dir() {
+                            let mut pb = path.to_path_buf();
+                            pb.push(format!("{}.{}", get_input_stem(input), ext));
+                            pb.to_string_lossy().to_string()
+                        } else {
+                            // If user specified -o file.pdf but we are in --typ mode,
+                            // we should probably respect the extension if it's already .typ
+                            // but if they just gave a name, we ensure the right extension
+                            if ext == "typ" && !out.ends_with(".typ") {
+                                if out.ends_with(".pdf") {
+                                    out.replace(".pdf", ".typ")
+                                } else {
+                                    format!("{}.typ", out)
+                                }
+                            } else {
+                                out.clone()
+                            }
+                        }
+                    }
+                }
+            };
+
             // Execute conversion
             if *typ {
-                let typ_output = if output == "output.pdf" {
-                    // Try to derive from input
-                    if input == "-" {
-                        "output.typ".to_string()
-                    } else {
-                        format!("{}.typ", input.split('.').next().unwrap_or(input))
-                    }
-                } else if output.ends_with(".pdf") {
-                    output.replace(".pdf", ".typ")
-                } else if output == "-" {
-                    "-".to_string() // Stream to stdout
-                } else {
-                    format!("{}.typ", output)
-                };
-
-                PandocWrapper::convert(&profile, input, &typ_output)?;
+                let typ_output = resolve_output(output.as_ref(), input, "typ");
+                PandocWrapper::convert(&profile, input, &typ_output, true)?;
             } else {
-                PandocWrapper::convert(&profile, input, output)?;
+                let final_output = resolve_output(output.as_ref(), input, "pdf");
+                PandocWrapper::convert(&profile, input, &final_output, false)?;
             }
             tracing::info!("Conversion completed successfully.");
         }

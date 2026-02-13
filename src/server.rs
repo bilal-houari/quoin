@@ -111,7 +111,7 @@ async fn handle_convert(Json(payload): Json<ConvertRequest>, is_pdf: bool) -> Re
         })?;
 
     debug!("Running pandoc conversion to {:?}", output_path);
-    if let Err(e) = PandocWrapper::convert(&profile, input_path.to_str().unwrap(), output_path.to_str().unwrap()) {
+    if let Err(e) = PandocWrapper::convert(&profile, input_path.to_str().unwrap(), output_path.to_str().unwrap(), !is_pdf) {
         error!("Conversion failed: {}", e);
         return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()));
     }

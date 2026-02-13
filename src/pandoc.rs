@@ -8,7 +8,7 @@ use tracing::{info, debug, error};
 pub struct PandocWrapper;
 
 impl PandocWrapper {
-    pub fn convert(profile: &Profile, input: &str, output: &str) -> Result<()> {
+    pub fn convert(profile: &Profile, input: &str, output: &str, is_typst: bool) -> Result<()> {
         info!("Starting conversion: {} -> {}", input, output);
 
         // Enforce pandoc existence
@@ -29,9 +29,12 @@ impl PandocWrapper {
         }
 
         // Set output
-        let is_typst = output.ends_with(".typ");
         let actual_output = if output == "-" {
-            "__quoin_temp.pdf".to_string()
+            if is_typst {
+                "__quoin_temp.typ".to_string()
+            } else {
+                "__quoin_temp.pdf".to_string()
+            }
         } else {
             output.to_string()
         };
