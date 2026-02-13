@@ -4,7 +4,11 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y git
 
-# We'll use a volume to mount the web directory
+# Install dependencies
+COPY package.json package-lock.json ./
+RUN npm install
+
+# We'll use a volume to mount the web directory for development
 EXPOSE 5173
 
 CMD ["npm", "run", "dev"]
