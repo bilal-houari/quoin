@@ -9,10 +9,14 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 toml = "0.8"
 anyhow = "1.0"
-which = "4.4"
+which = "6.0"
+# Web server dependencies
 axum = "0.7"
 tokio = { version = "1.0", features = ["full"] }
 tower-http = { version = "0.5", features = ["fs", "cors"] }
-rust-embed = { version = "8.0", features = ["interpolate-folder-path"] }
-tempfile = "3.8"
+rust-embed = "8.3"
+tempfile = "3.10"
 mime_guess = "2.0"
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

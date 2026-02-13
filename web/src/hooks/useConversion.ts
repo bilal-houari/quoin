@@ -1,5 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 
+/**
+ * Configuration for the document conversion.
+ */
 export interface Config {
   density: string;
   two_cols: boolean;
@@ -10,6 +13,13 @@ export interface Config {
   outline: boolean;
 }
 
+/**
+ * Hook to manage document conversion state and API interactions.
+ * 
+ * @param markdown - The raw markdown content to convert.
+ * @param config - The layout and style configuration.
+ * @param liveMode - Whether to trigger automatic conversion on changes.
+ */
 export function useConversion(markdown: string, config: Config, liveMode: boolean) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);

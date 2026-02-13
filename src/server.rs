@@ -13,6 +13,7 @@ use tower_http::cors::CorsLayer;
 
 use crate::pandoc::PandocWrapper;
 use crate::styles::Profile;
+use tracing::{debug, error};
 
 #[derive(RustEmbed)]
 #[folder = "web/dist/"]
@@ -48,7 +49,7 @@ pub async fn start_server(port: u16, api_only: bool) -> anyhow::Result<()> {
     let app = app.layer(CorsLayer::permissive());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    println!("Quoin server starting on http://{}", addr);
+    tracing::info!("Quoin server listening on http://{}", addr);
     
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
@@ -57,10 +58,12 @@ pub async fn start_server(port: u16, api_only: bool) -> anyhow::Result<()> {
 }
 
 async fn handle_convert_pdf(payload: Json<ConvertRequest>) -> Result<impl IntoResponse, (StatusCode, String)> {
+    tracing::info!("Received PDF conversion request");
     handle_convert(payload, true).await
 }
 
 async fn handle_convert_typ(payload: Json<ConvertRequest>) -> Result<impl IntoResponse, (StatusCode, String)> {
+    tracing::info!("Received Typst conversion request");
     handle_convert(payload, false).await
 }
 
@@ -92,20 +95,32 @@ async fn handle_convert(Json(payload): Json<ConvertRequest>, is_pdf: bool) -> Re
 
     // Create a temporary directory for conversion
     let tmp_dir = Builder::new().prefix("quoin-web-").tempdir()
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e| {
+            error!("Failed to create temporary directory: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        })?;
     
     let input_path = tmp_dir.path().join("input.md");
     let ext = if is_pdf { "pdf" } else { "typ" };
     let output_path = tmp_dir.path().join(format!("output.{}", ext));
 
     std::fs::write(&input_path, payload.markdown)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e| {
+            error!("Failed to write markdown to temporary file: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        })?;
 
-    PandocWrapper::convert(&profile, input_path.to_str().unwrap(), output_path.to_str().unwrap())
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    debug!("Running pandoc conversion to {:?}", output_path);
+    if let Err(e) = PandocWrapper::convert(&profile, input_path.to_str().unwrap(), output_path.to_str().unwrap()) {
+        error!("Conversion failed: {}", e);
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string()));
+    }
 
     let bytes = std::fs::read(&output_path)
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e| {
+            error!("Failed to read output file: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        })?;
 
     let content_type = if is_pdf { "application/pdf" } else { "text/plain" };
 

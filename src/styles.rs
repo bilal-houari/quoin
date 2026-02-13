@@ -1,13 +1,14 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};
 
-#[derive(Debug, Serialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Margin {
     pub x: String,
     pub y: String,
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq)]
+/// Core document metadata that translates directly to Pandoc/Typst variables.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Metadata {
     pub fontsize: String,
     pub lang: String,
@@ -22,10 +23,15 @@ pub struct Metadata {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// Represents a document conversion profile, holding all style and layout settings.
 pub struct Profile {
+    /// Variables passed to the Typst template via Pandoc metadata.
     pub metadata: Metadata,
+    /// Raw Typst code snippets to be included in the document header.
     pub header_includes: Vec<String>,
+    /// Raw Typst code snippets to be appended after the document body.
     pub after_body_includes: Vec<String>,
+    /// Whether to use the custom Lua filter for better table dimension handling.
     pub use_lua_table_filter: bool,
 }
 
@@ -53,8 +59,12 @@ impl Profile {
         }
     }
 
-    pub fn set_density(&mut self, density: &str) {
-        match density.to_lowercase().as_str() {
+    /// Set the layout density by adjusting font size and margins.
+    /// 
+    /// Supported levels: "ultra-dense", "dense", "standard", "comfort".
+    pub fn set_density(&mut self, level: &str) {
+        tracing::debug!("Setting density to {}", level);
+        match level.to_lowercase().as_str() {
             "ultra-dense" => {
                 self.metadata.fontsize = "8pt".to_string();
                 self.metadata.margin.x = "2cm".to_string();
@@ -85,11 +95,17 @@ impl Profile {
     }
 
     pub fn set_two_cols(&mut self, enabled: bool) {
-        self.metadata.columns = if enabled { 2 } else { 1 };
+        tracing::debug!("Setting two columns: {}", enabled);
+        if enabled {
+            self.metadata.columns = 2;
+        } else {
+            self.metadata.columns = 1;
+        }
     }
 
     pub fn set_latex_font(&mut self) {
-        self.metadata.mainfont = Some("New Computer Modern".to_string());
+        tracing::debug!("Enabling LaTeX-style font");
+        self.metadata.mainfont = Some("NewComputerModern08".to_string());
     }
 
     pub fn set_global_defaults(&mut self) {
@@ -98,16 +114,19 @@ impl Profile {
     }
 
     pub fn set_alt_table(&mut self) {
+        tracing::debug!("Enabling alternative table styling");
         let table_style = include_str!("assets/typst/alt_table.typ");
         self.header_includes.push(table_style.to_string());
     }
 
     pub fn set_pretty_code(&mut self) {
+        tracing::debug!("Enabling pretty code blocks");
         let code_style = include_str!("assets/typst/pretty_code.typ");
         self.header_includes.push(code_style.to_string());
     }
 
     pub fn set_section_numbering(&mut self, enabled: bool) {
+        tracing::debug!("Setting section numbering: {}", enabled);
         self.metadata.section_numbering = if enabled {
             Some("1.1".to_string())
         } else {
@@ -116,11 +135,13 @@ impl Profile {
     }
 
     pub fn set_outline(&mut self) {
+        tracing::debug!("Enabling document outline (TOC)");
         let outline_style = include_str!("assets/typst/outline.typ");
         self.after_body_includes.push(outline_style.to_string());
     }
 
     pub fn override_variable(&mut self, key: &str, value: &str) {
+        tracing::debug!("Overriding variable {} = {}", key, value);
         // Attempt to set structured fields first
         match key {
             "fontsize" => self.metadata.fontsize = value.to_string(),

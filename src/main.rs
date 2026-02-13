@@ -6,10 +6,14 @@ use quoin::server::start_server;
 
 #[derive(Parser)]
 #[command(name = "quoin")]
-#[command(about = "CLI engine for professional PDF generation via Pandoc & Typst", long_about = None)]
+#[command(about = "A Markdown-to-PDF engine leveraging Pandoc & Typst for professional-grade typesetting.", long_about = "Quoin is a local-first document engine that combines the simplicity of Markdown with the typographic power of Typst. It features a built-in web server for live-reloading previews and a highly configurable CLI for automated workflows.")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    /// Increase verbosity level (can be used multiple times)
+    #[arg(short, long, action = clap::ArgAction::Count, global = true)]
+    verbose: u8,
 }
 
 #[derive(Subcommand)]
@@ -23,23 +27,23 @@ enum Commands {
         #[arg(short, long, default_value = "output.pdf")]
         output: String,
 
-        /// Use ultra-dense layout (8pt font, 2cm margins)
+        /// Use ultra-dense layout (8pt font, 2cm margins). Ideal for cheat sheets.
         #[arg(long, group = "density_level")]
         ultra_dense: bool,
 
-        /// Use dense layout (10pt font, 2cm margins)
+        /// Use dense layout (10pt font, 2cm margins). Compact but readable.
         #[arg(long, group = "density_level")]
         dense: bool,
 
-        /// Use standard layout (10pt font, 2.5cm/3cm margins) [default]
+        /// Use standard layout (10pt font, 2.5cm/3cm margins). [default]
         #[arg(long, group = "density_level")]
         standard: bool,
 
-        /// Use comfort layout (12pt font, 2.5cm/3cm margins)
+        /// Use comfort layout (12pt font, 2.5cm/3cm margins). Maximum readability.
         #[arg(long, group = "density_level")]
         comfort: bool,
 
-        /// Enable 2-column layout
+        /// Enable 2-column layout (Note: may cause overlapping with large tables)
         #[arg(long)]
         two_cols: bool,
 
@@ -51,27 +55,27 @@ enum Commands {
         #[arg(long)]
         table_dims: bool,
 
-        /// Enable "New Computer Modern" LaTeX-style font
+        /// Enable "New Computer Modern" LaTeX-style font for that academic look
         #[arg(long)]
         latex_font: bool,
 
-        /// Disable advanced code block styling (enabled by default)
+        /// Disable advanced code block styling (syntax highlighting & background)
         #[arg(long)]
         no_pretty_code: bool,
 
-        /// Enable section numbering
+        /// Enable section numbering (e.g., 1.1, 1.2)
         #[arg(long)]
         section_numbering: bool,
 
-        /// Output Typst source instead of PDF (or in addition to it)
+        /// Output Typst source instead of PDF (or in addition to it if output ends in .typ)
         #[arg(long)]
         typ: bool,
 
-        /// Append a Table of Contents (Outline) at the end
+        /// Append a Table of Contents (Outline) at the end of the document
         #[arg(long)]
         outline: bool,
 
-        /// Override custom variables (e.g., -V cols=2)
+        /// Override custom variables or set Typst metadata (e.g., -V lang=fr -V cols=2)
         #[arg(short = 'V', long = "variable")]
         variables: Vec<String>,
     },
@@ -90,6 +94,23 @@ enum Commands {
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Initialize logging
+    // Default (0): INFO for quoin and general
+    // -v (1): DEBUG for quoin, INFO for others
+    // -vv (2+): TRACE for quoin, DEBUG for others
+    let filter = match cli.verbose {
+        0 => "info,quoin=info",
+        1 => "info,quoin=debug",
+        _ => "debug,quoin=trace",
+    };
+
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(false)
+        .init();
+
+    tracing::info!("Quoin starting...");
 
     match &cli.command {
         Commands::Convert { 
@@ -197,6 +218,7 @@ async fn main() -> Result<()> {
             } else {
                 PandocWrapper::convert(&profile, input, output)?;
             }
+            tracing::info!("Conversion completed successfully.");
         }
         Commands::Server { port, api_only } => {
             start_server(*port, *api_only).await?;
