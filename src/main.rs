@@ -76,6 +76,10 @@ enum Commands {
         /// Port to listen on
         #[arg(short, long, default_value = "3000")]
         port: u16,
+
+        /// Only host the API (no webapp UI)
+        #[arg(long)]
+        api_only: bool,
     },
 }
 
@@ -184,8 +188,8 @@ async fn main() -> Result<()> {
                 PandocWrapper::convert(&profile, input, output)?;
             }
         }
-        Commands::Server { port } => {
-            start_server(*port).await?;
+        Commands::Server { port, api_only } => {
+            start_server(*port, *api_only).await?;
         }
     }
 

@@ -34,13 +34,17 @@ pub struct ConvertResponse {
     pub pdf_base64: String,
 }
 
-pub async fn start_server(port: u16) -> anyhow::Result<()> {
-    let app = Router::new()
+pub async fn start_server(port: u16, api_only: bool) -> anyhow::Result<()> {
+    let mut app = Router::new()
         .route("/api/convert", post(handle_convert_pdf))
         .route("/api/convert/typ", post(handle_convert_typ))
-        .route("/api/health", get(|| async { "OK" }))
-        .fallback(static_handler)
-        .layer(CorsLayer::permissive());
+        .route("/api/health", get(|| async { "OK" }));
+
+    if !api_only {
+        app = app.fallback(static_handler);
+    }
+
+    let app = app.layer(CorsLayer::permissive());
 
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     println!("Quoin server starting on http://{}", addr);
