@@ -9,6 +9,9 @@ function App() {
   const [markdown, setMarkdown] = useState<string>(() => {
     return localStorage.getItem('quoin-markdown') || '# Hello Quoin\n\nEdit this to see live preview!';
   });
+  const [title, setTitle] = useState<string>(() => {
+    return localStorage.getItem('quoin-title') || 'Untitled Document';
+  });
   const [config, setConfig] = useState<Config>(() => {
     const saved = localStorage.getItem('quoin-config');
     const defaultConfig: Config = {
@@ -41,10 +44,14 @@ function App() {
     }
   }, [isDarkMode]);
 
-  // Persist markdown and config
+  // Persist markdown, config, and title
   useEffect(() => {
     localStorage.setItem('quoin-markdown', markdown);
   }, [markdown]);
+
+  useEffect(() => {
+    localStorage.setItem('quoin-title', title);
+  }, [title]);
 
   useEffect(() => {
     localStorage.setItem('quoin-config', JSON.stringify(config));
@@ -54,7 +61,7 @@ function App() {
     if (!pdfUrl) return;
     const link = document.createElement('a');
     link.href = pdfUrl;
-    link.download = 'quoin-document.pdf';
+    link.download = `${title}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -65,7 +72,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'document.md';
+    link.download = `${title}.md`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -75,13 +82,15 @@ function App() {
   return (
     <div className="h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Header
+        title={title}
+        onTitleChange={setTitle}
         isLoading={isLoading}
         isDarkMode={isDarkMode}
         toggleDarkMode={() => setIsDarkMode(!isDarkMode)}
         toggleSidebar={() => setShowSidebar(!showSidebar)}
         onCompile={convert}
         onDownload={handleDownload}
-        onDownloadTyp={downloadTyp}
+        onDownloadTyp={() => downloadTyp(title)}
         onDownloadMd={handleDownloadMd}
       />
 

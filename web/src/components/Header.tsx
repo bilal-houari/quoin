@@ -1,6 +1,8 @@
 import { FileText, Play, Download, Moon, Sun, Settings, Loader2 } from 'lucide-react';
 
 interface HeaderProps {
+  title: string;
+  onTitleChange: (title: string) => void;
   isLoading: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
@@ -12,6 +14,8 @@ interface HeaderProps {
 }
 
 export function Header({
+  title,
+  onTitleChange,
   isLoading,
   isDarkMode,
   toggleDarkMode,
@@ -23,11 +27,26 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-20 shadow-sm">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-black dark:bg-white rounded-md flex items-center justify-center">
-          <FileText className="text-white dark:text-black w-5 h-5" />
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-black dark:bg-white rounded-md flex items-center justify-center shadow-inner">
+            <FileText className="text-white dark:text-black w-5 h-5" />
+          </div>
+          <span className="font-bold text-xl tracking-tight uppercase hidden sm:inline">Quoin</span>
         </div>
-        <span className="font-bold text-xl tracking-tight uppercase">Quoin</span>
+
+        <div className="h-6 w-px bg-border mx-1" />
+
+        <div className="relative group flex items-center">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            className="bg-transparent border-none focus:ring-0 text-sm font-medium px-2 py-1 rounded hover:bg-muted/50 transition-colors w-48 md:w-64 placeholder:italic"
+            placeholder="Untitled Document"
+          />
+          <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary scale-x-0 group-focus-within:scale-x-100 transition-transform origin-left rounded-full" />
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

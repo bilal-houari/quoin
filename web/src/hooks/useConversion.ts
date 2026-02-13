@@ -52,7 +52,7 @@ export function useConversion(markdown: string, config: Config, liveMode: boolea
     }
   }, [markdown, config, pdfUrl]);
 
-  const downloadTyp = useCallback(async () => {
+  const downloadTyp = useCallback(async (title?: string) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -70,7 +70,7 @@ export function useConversion(markdown: string, config: Config, liveMode: boolea
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'document.typ';
+      link.download = `${title || 'document'}.typ`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
