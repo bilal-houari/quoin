@@ -59,6 +59,14 @@ enum Commands {
         #[arg(long)]
         no_pretty_code: bool,
 
+        /// Enable section numbering
+        #[arg(long)]
+        section_numbering: bool,
+
+        /// Output Typst source instead of PDF (or in addition to it)
+        #[arg(long)]
+        typ: bool,
+
         /// Override custom variables (e.g., -V cols=2)
         #[arg(short = 'V', long = "variable")]
         variables: Vec<String>,
@@ -88,6 +96,8 @@ async fn main() -> Result<()> {
             no_alt_table, 
             table_dims, 
             no_pretty_code, 
+            section_numbering,
+            typ,
             variables 
         } => {
             let mut profile = Profile::new();
@@ -137,6 +147,11 @@ async fn main() -> Result<()> {
                 profile.set_pretty_code();
             }
 
+            // Apply section-numbering if requested
+            if *section_numbering {
+                profile.set_section_numbering(true);
+            }
+
             // Apply custom variable overrides
             for var in variables {
                 if let Some((key, value)) = var.split_once('=') {
@@ -148,7 +163,26 @@ async fn main() -> Result<()> {
             }
 
             // Execute conversion
-            PandocWrapper::convert(&profile, input, output)?;
+            if *typ {
+                let typ_output = if output == "output.pdf" {
+                    // Try to derive from input
+                    if input == "-" {
+                        "output.typ".to_string()
+                    } else {
+                        format!("{}.typ", input.split('.').next().unwrap_or(input))
+                    }
+                } else if output.ends_with(".pdf") {
+                    output.replace(".pdf", ".typ")
+                } else if output == "-" {
+                    "-".to_string() // Stream to stdout
+                } else {
+                    format!("{}.typ", output)
+                };
+                
+                PandocWrapper::convert(&profile, input, &typ_output)?;
+            } else {
+                PandocWrapper::convert(&profile, input, output)?;
+            }
         }
         Commands::Server { port } => {
             start_server(*port).await?;

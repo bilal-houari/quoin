@@ -12,13 +12,14 @@ function App() {
     two_cols: false,
     latex_font: false,
     alt_table: true,
-    pretty_code: true
+    pretty_code: true,
+    section_numbering: false
   });
   const [liveMode, setLiveMode] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const { pdfUrl, isLoading, error, convert } = useConversion(markdown, config, liveMode);
+  const { pdfUrl, isLoading, error, convert, downloadTyp } = useConversion(markdown, config, liveMode);
 
   // Sync theme with document root
   useEffect(() => {
@@ -48,6 +49,7 @@ function App() {
         toggleSidebar={() => setShowSidebar(!showSidebar)}
         onCompile={convert}
         onDownload={handleDownload}
+        onDownloadTyp={downloadTyp}
       />
 
       <main className="flex-1 flex overflow-hidden">

@@ -15,6 +15,8 @@ pub struct Metadata {
     pub margin: Margin,
     pub columns: u8,
     pub mainfont: Option<String>,
+    #[serde(rename = "section-numbering")]
+    pub section_numbering: Option<String>,
     #[serde(flatten)]
     pub extra: Mapping,
 }
@@ -38,6 +40,7 @@ impl Profile {
             },
             columns: 1,
             mainfont: None,
+            section_numbering: None,
             extra: Mapping::new(),
         };
 
@@ -102,6 +105,14 @@ impl Profile {
         self.header_includes.push(code_style.to_string());
     }
 
+    pub fn set_section_numbering(&mut self, enabled: bool) {
+        self.metadata.section_numbering = if enabled {
+            Some("1.".to_string())
+        } else {
+            None
+        };
+    }
+
     pub fn override_variable(&mut self, key: &str, value: &str) {
         // Attempt to set structured fields first
         match key {
@@ -112,6 +123,7 @@ impl Profile {
             "margin.y" => self.metadata.margin.y = value.to_string(),
             "columns" => if let Ok(n) = value.parse() { self.metadata.columns = n },
             "mainfont" => self.metadata.mainfont = Some(value.to_string()),
+            "section-numbering" | "sectionnumbering" => self.metadata.section_numbering = Some(value.to_string()),
             _ => {
                 // Support dotted keys for nesting in extra
                 let parts: Vec<&str> = key.split('.').collect();

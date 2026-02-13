@@ -26,6 +26,7 @@ pub struct ConvertRequest {
     pub latex_font: Option<bool>,
     pub alt_table: Option<bool>,
     pub pretty_code: Option<bool>,
+    pub section_numbering: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -35,7 +36,8 @@ pub struct ConvertResponse {
 
 pub async fn start_server(port: u16) -> anyhow::Result<()> {
     let app = Router::new()
-        .route("/api/convert", post(handle_convert))
+        .route("/api/convert", post(handle_convert_pdf))
+        .route("/api/convert/typ", post(handle_convert_typ))
         .route("/api/health", get(|| async { "OK" }))
         .fallback(static_handler)
         .layer(CorsLayer::permissive());
@@ -49,7 +51,15 @@ pub async fn start_server(port: u16) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn handle_convert(Json(payload): Json<ConvertRequest>) -> Result<impl IntoResponse, (StatusCode, String)> {
+async fn handle_convert_pdf(payload: Json<ConvertRequest>) -> Result<impl IntoResponse, (StatusCode, String)> {
+    handle_convert(payload, true).await
+}
+
+async fn handle_convert_typ(payload: Json<ConvertRequest>) -> Result<impl IntoResponse, (StatusCode, String)> {
+    handle_convert(payload, false).await
+}
+
+async fn handle_convert(Json(payload): Json<ConvertRequest>, is_pdf: bool) -> Result<impl IntoResponse, (StatusCode, String)> {
     let mut profile = Profile::new();
     profile.set_global_defaults();
     
@@ -68,13 +78,17 @@ async fn handle_convert(Json(payload): Json<ConvertRequest>) -> Result<impl Into
     if let Some(true) = payload.pretty_code {
         profile.set_pretty_code();
     }
+    if let Some(true) = payload.section_numbering {
+        profile.set_section_numbering(true);
+    }
 
     // Create a temporary directory for conversion
     let tmp_dir = Builder::new().prefix("quoin-web-").tempdir()
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     
     let input_path = tmp_dir.path().join("input.md");
-    let output_path = tmp_dir.path().join("output.pdf");
+    let ext = if is_pdf { "pdf" } else { "typ" };
+    let output_path = tmp_dir.path().join(format!("output.{}", ext));
 
     std::fs::write(&input_path, payload.markdown)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
@@ -82,13 +96,14 @@ async fn handle_convert(Json(payload): Json<ConvertRequest>) -> Result<impl Into
     PandocWrapper::convert(&profile, input_path.to_str().unwrap(), output_path.to_str().unwrap())
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    let pdf_bytes = std::fs::read(&output_path)
+    let bytes = std::fs::read(&output_path)
         .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
 
-    // Return PDF as base64 or bytes. For a preview, bytes with correct content type is better.
+    let content_type = if is_pdf { "application/pdf" } else { "text/plain" };
+
     Ok(Response::builder()
-        .header(header::CONTENT_TYPE, "application/pdf")
-        .body(axum::body::Body::from(pdf_bytes))
+        .header(header::CONTENT_TYPE, content_type)
+        .body(axum::body::Body::from(bytes))
         .unwrap())
 }
 

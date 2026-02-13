@@ -7,6 +7,7 @@ interface HeaderProps {
   toggleSidebar: () => void;
   onCompile: () => void;
   onDownload: () => void;
+  onDownloadTyp: () => void;
 }
 
 export function Header({
@@ -15,7 +16,8 @@ export function Header({
   toggleDarkMode,
   toggleSidebar,
   onCompile,
-  onDownload
+  onDownload,
+  onDownloadTyp
 }: HeaderProps) {
   return (
     <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-20 shadow-sm">
@@ -41,6 +43,14 @@ export function Header({
           className="p-2 hover:bg-muted rounded-md transition-colors text-muted-foreground"
         >
           <Download className="w-5 h-5" />
+        </button>
+        <button
+          onClick={onDownloadTyp}
+          title="Export Typst Source"
+          className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground text-[10px] font-bold uppercase tracking-wider"
+        >
+          <FileText className="w-4 h-4" />
+          .typ
         </button>
         <div className="w-px h-6 bg-border mx-2" />
         <button

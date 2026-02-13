@@ -6,6 +6,7 @@ export interface Config {
   latex_font: boolean;
   alt_table: boolean;
   pretty_code: boolean;
+  section_numbering: boolean;
 }
 
 export function useConversion(markdown: string, config: Config, liveMode: boolean) {
@@ -40,6 +41,36 @@ export function useConversion(markdown: string, config: Config, liveMode: boolea
     }
   }, [markdown, config, pdfUrl]);
 
+  const downloadTyp = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/convert/typ', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markdown, ...config }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Typst export failed: ${await response.text()}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'document.typ';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [markdown, config]);
+
   useEffect(() => {
     if (!liveMode) return;
     const timer = setTimeout(() => {
@@ -48,5 +79,5 @@ export function useConversion(markdown: string, config: Config, liveMode: boolea
     return () => clearTimeout(timer);
   }, [markdown, config, liveMode]);
 
-  return { pdfUrl, isLoading, error, convert };
+  return { pdfUrl, isLoading, error, convert, downloadTyp };
 }

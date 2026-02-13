@@ -50,7 +50,8 @@ export function Sidebar({ config, setConfig, liveMode, setLiveMode }: SidebarPro
           { label: 'Two Columns', key: 'two_cols' },
           { label: 'LaTeX Font', key: 'latex_font' },
           { label: 'Alt Tables', key: 'alt_table' },
-          { label: 'Pretty Code', key: 'pretty_code' }
+          { label: 'Pretty Code', key: 'pretty_code' },
+          { label: 'Section Numbering', key: 'section_numbering' }
         ].map(({ label, key }) => (
           <label key={key} className="flex items-center justify-between group cursor-pointer">
             <span className="text-sm font-medium group-hover:text-primary transition-colors">{label}</span>
