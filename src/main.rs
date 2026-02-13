@@ -1,12 +1,15 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use quoin::pandoc::PandocWrapper;
-use quoin::styles::Profile;
 use quoin::server::start_server;
+use quoin::styles::Profile;
 
 #[derive(Parser)]
 #[command(name = "quoin")]
-#[command(about = "A Markdown-to-PDF engine leveraging Pandoc & Typst for professional-grade typesetting.", long_about = "Quoin is a local-first document engine that combines the simplicity of Markdown with the typographic power of Typst. It features a built-in web server for live-reloading previews and a highly configurable CLI for automated workflows.")]
+#[command(
+    about = "A Markdown-to-PDF engine leveraging Pandoc & Typst for professional-grade typesetting.",
+    long_about = "Quoin is a local-first document engine that combines the simplicity of Markdown with the typographic power of Typst. It features a built-in web server for live-reloading previews and a highly configurable CLI for automated workflows."
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -19,66 +22,73 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Converts a document to PDF
+    #[command(next_display_order = None)] // Allows us to manualy control order
     Convert {
         /// Input file path (use '-' for stdin)
+        #[arg(display_order = 1)]
         input: String,
 
         /// Output file path (use '-' for stdout)
-        #[arg(short, long, default_value = "output.pdf")]
+        #[arg(short, long, default_value = "output.pdf", display_order = 2)]
         output: String,
 
+        // --- Layout Group ---
         /// Use ultra-dense layout (8pt font, 2cm margins). Ideal for cheat sheets.
-        #[arg(long, group = "density_level")]
+        #[arg(long, group = "density_level", help_heading = "Layout Options", display_order = 10)]
         ultra_dense: bool,
 
         /// Use dense layout (10pt font, 2cm margins). Compact but readable.
-        #[arg(long, group = "density_level")]
+        #[arg(long, group = "density_level", help_heading = "Layout Options", display_order = 11)]
         dense: bool,
 
         /// Use standard layout (10pt font, 2.5cm/3cm margins). [default]
-        #[arg(long, group = "density_level")]
+        #[arg(long, group = "density_level", help_heading = "Layout Options", display_order = 12)]
         standard: bool,
 
         /// Use comfort layout (12pt font, 2.5cm/3cm margins). Maximum readability.
-        #[arg(long, group = "density_level")]
+        #[arg(long, group = "density_level", help_heading = "Layout Options", display_order = 13)]
         comfort: bool,
 
         /// Enable 2-column layout (Note: may cause overlapping with large tables)
-        #[arg(long)]
+        #[arg(long, help_heading = "Layout Options", display_order = 14)]
         two_cols: bool,
 
-        /// Disable alternative table styling (enabled by default)
-        #[arg(long)]
-        no_alt_table: bool,
-
-        /// Restore default Pandoc table dimensions (overrides custom filter)
-        #[arg(long)]
-        table_dims: bool,
-
+        // --- Styling Group ---
         /// Enable "New Computer Modern" LaTeX-style font for that academic look
-        #[arg(long)]
+        #[arg(long, help_heading = "Formatting & Style", display_order = 20)]
         latex_font: bool,
 
         /// Disable advanced code block styling (syntax highlighting & background)
-        #[arg(long)]
+        #[arg(long, help_heading = "Formatting & Style", display_order = 21)]
         no_pretty_code: bool,
 
+        /// Disable alternative table styling (enabled by default)
+        #[arg(long, help_heading = "Formatting & Style", display_order = 22)]
+        no_alt_table: bool,
+
+        /// Restore default Pandoc table dimensions (overrides custom filter)
+        #[arg(long, help_heading = "Formatting & Style", display_order = 23)]
+        table_dims: bool,
+
+        // --- Document Features ---
         /// Enable section numbering (e.g., 1.1, 1.2)
-        #[arg(long)]
+        #[arg(long, help_heading = "Document Features", display_order = 30)]
         section_numbering: bool,
 
-        /// Output Typst source instead of PDF (or in addition to it if output ends in .typ)
-        #[arg(long)]
-        typ: bool,
-
         /// Append a Table of Contents (Outline) at the end of the document
-        #[arg(long)]
+        #[arg(long, help_heading = "Document Features", display_order = 31)]
         outline: bool,
 
+        // --- Advanced ---
+        /// Output Typst source instead of PDF (or in addition to it if output ends in .typ)
+        #[arg(long, help_heading = "Advanced", display_order = 40)]
+        typ: bool,
+
         /// Override custom variables or set Typst metadata (e.g., -V lang=fr -V cols=2)
-        #[arg(short = 'V', long = "variable")]
+        #[arg(short = 'V', long = "variable", help_heading = "Advanced", display_order = 41)]
         variables: Vec<String>,
     },
+
     /// Starts a local web server for live preview
     Server {
         /// Port to listen on
@@ -113,22 +123,22 @@ async fn main() -> Result<()> {
     tracing::info!("Quoin starting...");
 
     match &cli.command {
-        Commands::Convert { 
-            input, 
-            output, 
-            ultra_dense, 
-            dense, 
-            standard: _standard, 
-            comfort, 
-            two_cols, 
-            latex_font, 
-            no_alt_table, 
-            table_dims, 
-            no_pretty_code, 
+        Commands::Convert {
+            input,
+            output,
+            ultra_dense,
+            dense,
+            standard: _standard,
+            comfort,
+            two_cols,
+            latex_font,
+            no_alt_table,
+            table_dims,
+            no_pretty_code,
             section_numbering,
             typ,
             outline,
-            variables 
+            variables,
         } => {
             let mut profile = Profile::new();
 
@@ -213,7 +223,7 @@ async fn main() -> Result<()> {
                 } else {
                     format!("{}.typ", output)
                 };
-                
+
                 PandocWrapper::convert(&profile, input, &typ_output)?;
             } else {
                 PandocWrapper::convert(&profile, input, output)?;
