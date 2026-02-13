@@ -7,6 +7,7 @@ export interface Config {
   alt_table: boolean;
   pretty_code: boolean;
   section_numbering: boolean;
+  outline: boolean;
 }
 
 export function useConversion(markdown: string, config: Config, liveMode: boolean) {

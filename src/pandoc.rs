@@ -45,6 +45,7 @@ impl PandocWrapper {
         // Create temporary metadata YAML file
         let metadata_path = format!("{}_metadata.yaml", actual_output);
         let header_path = format!("{}_header.typ", actual_output);
+        let after_body_path = format!("{}_after_body.typ", actual_output);
         let lua_path = format!("{}_table.lua", actual_output);
         
         // Write Lua filter
@@ -66,6 +67,13 @@ impl PandocWrapper {
             cmd.arg("--include-in-header").arg(&header_path);
         }
 
+        // Write after body includes to a separate file
+        if !profile.after_body_includes.is_empty() {
+            let after_body_content = profile.after_body_includes.join("\n");
+            std::fs::write(&after_body_path, after_body_content)?;
+            cmd.arg("--include-after-body").arg(&after_body_path);
+        }
+
         let mut child = cmd.spawn()?;
 
         // If stdin is used, pipe current stdin to child
@@ -81,6 +89,7 @@ impl PandocWrapper {
         // Cleanup temporary files
         let _ = std::fs::remove_file(&metadata_path);
         let _ = std::fs::remove_file(&header_path);
+        let _ = std::fs::remove_file(&after_body_path);
         if profile.use_lua_table_filter {
             let _ = std::fs::remove_file(&lua_path);
         }

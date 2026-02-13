@@ -25,6 +25,7 @@ pub struct Metadata {
 pub struct Profile {
     pub metadata: Metadata,
     pub header_includes: Vec<String>,
+    pub after_body_includes: Vec<String>,
     pub use_lua_table_filter: bool,
 }
 
@@ -47,6 +48,7 @@ impl Profile {
         Self { 
             metadata,
             header_includes: Vec::new(),
+            after_body_includes: Vec::new(),
             use_lua_table_filter: true,
         }
     }
@@ -107,10 +109,15 @@ impl Profile {
 
     pub fn set_section_numbering(&mut self, enabled: bool) {
         self.metadata.section_numbering = if enabled {
-            Some("1.".to_string())
+            Some("1.1".to_string())
         } else {
             None
         };
+    }
+
+    pub fn set_outline(&mut self) {
+        let outline_style = include_str!("assets/typst/outline.typ");
+        self.after_body_includes.push(outline_style.to_string());
     }
 
     pub fn override_variable(&mut self, key: &str, value: &str) {

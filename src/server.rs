@@ -27,6 +27,7 @@ pub struct ConvertRequest {
     pub alt_table: Option<bool>,
     pub pretty_code: Option<bool>,
     pub section_numbering: Option<bool>,
+    pub outline: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -84,6 +85,9 @@ async fn handle_convert(Json(payload): Json<ConvertRequest>, is_pdf: bool) -> Re
     }
     if let Some(true) = payload.section_numbering {
         profile.set_section_numbering(true);
+    }
+    if let Some(true) = payload.outline {
+        profile.set_outline();
     }
 
     // Create a temporary directory for conversion

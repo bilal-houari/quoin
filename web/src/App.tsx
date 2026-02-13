@@ -17,7 +17,8 @@ function App() {
       latex_font: false,
       alt_table: true,
       pretty_code: true,
-      section_numbering: false
+      section_numbering: false,
+      outline: false
     };
     return saved ? JSON.parse(saved) : defaultConfig;
   });

@@ -67,6 +67,10 @@ enum Commands {
         #[arg(long)]
         typ: bool,
 
+        /// Append a Table of Contents (Outline) at the end
+        #[arg(long)]
+        outline: bool,
+
         /// Override custom variables (e.g., -V cols=2)
         #[arg(short = 'V', long = "variable")]
         variables: Vec<String>,
@@ -102,6 +106,7 @@ async fn main() -> Result<()> {
             no_pretty_code, 
             section_numbering,
             typ,
+            outline,
             variables 
         } => {
             let mut profile = Profile::new();
@@ -154,6 +159,11 @@ async fn main() -> Result<()> {
             // Apply section-numbering if requested
             if *section_numbering {
                 profile.set_section_numbering(true);
+            }
+
+            // Apply outline if requested
+            if *outline {
+                profile.set_outline();
             }
 
             // Apply custom variable overrides
