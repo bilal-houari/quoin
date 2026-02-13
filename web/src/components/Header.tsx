@@ -8,6 +8,7 @@ interface HeaderProps {
   onCompile: () => void;
   onDownload: () => void;
   onDownloadTyp: () => void;
+  onDownloadMd: () => void;
 }
 
 export function Header({
@@ -17,7 +18,8 @@ export function Header({
   toggleSidebar,
   onCompile,
   onDownload,
-  onDownloadTyp
+  onDownloadTyp,
+  onDownloadMd
 }: HeaderProps) {
   return (
     <header className="h-14 border-b flex items-center justify-between px-4 bg-background z-20 shadow-sm">
@@ -51,6 +53,14 @@ export function Header({
         >
           <FileText className="w-4 h-4" />
           .typ
+        </button>
+        <button
+          onClick={onDownloadMd}
+          title="Download Markdown"
+          className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground text-[10px] font-bold uppercase tracking-wider"
+        >
+          <FileText className="w-4 h-4" />
+          .md
         </button>
         <div className="w-px h-6 bg-border mx-2" />
         <button
