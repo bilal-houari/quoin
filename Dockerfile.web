@@ -1,0 +1,8 @@
+FROM node:24-slim
+
+WORKDIR /app
+
+# Run as root to handle any volume permissions.
+# After the build, we chown the generated files back to the host user's UID/GID.
+
+CMD ["sh", "-c", "cd web && npm install && npm run build && chown -R ${USER_ID}:${GROUP_ID} dist node_modules package-lock.json 2>/dev/null || true"]

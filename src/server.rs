@@ -36,7 +36,7 @@ pub struct ConvertResponse {
     pub pdf_base64: String,
 }
 
-pub async fn start_server(port: u16, api_only: bool) -> anyhow::Result<()> {
+pub async fn start_server(port: u16, api_only: bool, allow_external: bool) -> anyhow::Result<()> {
     let mut app = Router::new()
         .route("/api/convert", post(handle_convert_pdf))
         .route("/api/convert/typ", post(handle_convert_typ))
@@ -48,10 +48,20 @@ pub async fn start_server(port: u16, api_only: bool) -> anyhow::Result<()> {
 
     let app = app.layer(CorsLayer::permissive());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let host = if allow_external { [0, 0, 0, 0] } else { [127, 0, 0, 1] };
+    let addr = SocketAddr::from((host, port));
     tracing::info!("Quoin server listening on http://{}", addr);
     
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let listener = match tokio::net::TcpListener::bind(addr).await {
+        Ok(l) => l,
+        Err(e) => {
+            if e.kind() == std::io::ErrorKind::AddrInUse {
+                anyhow::bail!("Port {} is already in use. Please choose a different port using --port.", port);
+            } else {
+                return Err(anyhow::anyhow!("Failed to bind to port {}: {}", port, e));
+            }
+        }
+    };
     axum::serve(listener, app).await?;
     
     Ok(())

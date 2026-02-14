@@ -105,7 +105,7 @@ impl Profile {
 
     pub fn set_latex_font(&mut self) {
         tracing::debug!("Enabling LaTeX-style font");
-        self.metadata.mainfont = Some("NewComputerModern08".to_string());
+        self.metadata.mainfont = Some("New Computer Modern".to_string());
     }
 
     pub fn set_global_defaults(&mut self) {

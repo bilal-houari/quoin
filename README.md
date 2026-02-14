@@ -10,6 +10,16 @@ Quoin is a document engine that turns Markdown files into professional PDFs. It 
 *   **Live Preview**: A built-in web server to edit Markdown and see PDF changes in real-time.
 *   **Flexible**: Export directly to PDF or get the intermediate Typst source code.
 
+## Quick Start (Docker)
+
+If you have Docker installed, you can start the web server immediately:
+
+```bash
+docker run -it --init --rm -p 3232:3232 ghcr.io/bilal-houari/quoin:latest server --allow-external
+```
+
+For detailed Docker usage (CLI, mounting files, etc.), see [DOCKER.md](DOCKER.md).
+
 ## Prerequisites
 
 You will need the following installed:

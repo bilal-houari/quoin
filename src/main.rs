@@ -95,12 +95,16 @@ enum Commands {
     /// Starts a local web server for live preview
     Server {
         /// Port to listen on
-        #[arg(short, long, default_value = "3000")]
+        #[arg(short, long, default_value = "3232")]
         port: u16,
 
         /// Only host the API (no webapp UI)
         #[arg(long)]
         api_only: bool,
+
+        /// Allow connections from external interfaces (binds to 0.0.0.0)
+        #[arg(long)]
+        allow_external: bool,
     },
 }
 
@@ -263,8 +267,8 @@ async fn main() -> Result<()> {
             }
             tracing::info!("Conversion completed successfully.");
         }
-        Commands::Server { port, api_only } => {
-            start_server(*port, *api_only).await?;
+        Commands::Server { port, api_only, allow_external } => {
+            start_server(*port, *api_only, *allow_external).await?;
         }
     }
 

@@ -21,12 +21,12 @@ fn test_programmatic_conversion() {
     let typ_output = format!("{}/basic.typ", output_dir);
 
     // Test PDF generation
-    PandocWrapper::convert(&profile, sample_path, &pdf_output)
+    PandocWrapper::convert(&profile, sample_path, &pdf_output, false)
         .expect("Failed to generate PDF");
     assert!(Path::new(&pdf_output).exists());
 
     // Test Typst source generation
-    PandocWrapper::convert(&profile, sample_path, &typ_output)
+    PandocWrapper::convert(&profile, sample_path, &typ_output, true)
         .expect("Failed to generate Typst source");
     assert!(Path::new(&typ_output).exists());
 }
@@ -41,7 +41,7 @@ fn test_yaml_header_override() {
     let mut profile = Profile::new();
     profile.metadata.lang = "en".to_string(); // Profile says English
     
-    PandocWrapper::convert(&profile, sample_path, &typ_output)
+    PandocWrapper::convert(&profile, sample_path, &typ_output, true)
         .expect("Failed override test conversion");
     
     let content = fs::read_to_string(&typ_output).unwrap();
@@ -60,6 +60,6 @@ fn test_nested_metadata_conversion_success() {
     profile.override_variable("custom.nested.key", "nested_value");
     
     // Just verify that the conversion succeeds with nested metadata
-    PandocWrapper::convert(&profile, sample_path, &typ_output)
+    PandocWrapper::convert(&profile, sample_path, &typ_output, true)
         .expect("Failed nested metadata conversion");
 }
