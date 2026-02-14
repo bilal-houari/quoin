@@ -5,9 +5,8 @@ The easiest way to use Quoin is via its official Docker image. This ensures you 
 ## 1. Pull the Image
 
 ```bash
-docker pull ghcr.io/{{YOUR_GITHUB_USERNAME}}/quoin:latest
+docker pull ghcr.io/bilal-houari/quoin:latest
 ```
-*(Replace `{{YOUR_GITHUB_USERNAME}}` with your actual username once published)*
 
 ## 2. Using the Web Interface (Live Preview)
 
