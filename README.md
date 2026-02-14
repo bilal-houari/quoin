@@ -6,9 +6,13 @@ Quoin is a document engine that turns Markdown files into professional PDFs. It 
 
 *   **Pandoc & Typst Wrapper**: Combines the document conversion of Pandoc with the modern layout engine of Typst.
 *   **Layout Presets**: Quick options for document density (ultra-dense, dense, standard, or comfort).
-*   **Styling**: Support for LaTeX-style fonts (New Computer Modern), section numbering, and two-column layouts.
+*   **Styling**: Support for LaTeX-style fonts (New Computer Modern), section numbering, two-column layouts, etc.
 *   **Live Preview**: A built-in web server to edit Markdown and see PDF changes in real-time.
 *   **Flexible**: Export directly to PDF or get the intermediate Typst source code.
+
+## Screenshots
+
+<img width="1920" height="1033" alt="image of the web interface of the app" src="https://github.com/user-attachments/assets/0ee78491-4e97-43fc-99a3-05c49bfc5f86" />
 
 ## Quick Start (Docker)
 
