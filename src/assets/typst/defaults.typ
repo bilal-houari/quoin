@@ -2,3 +2,4 @@
 #show table: text.with(size: 0.9em)
 #show figure: set block(breakable: true)
 #show math.equation.where(block: true): set block(breakable: true)
+#let horizontalrule = line(start: (0%,0%), end: (100%,0%), stroke: 1pt + luma(100))

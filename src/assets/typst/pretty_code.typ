@@ -3,6 +3,6 @@
 #show raw.where(block: true): it => {
   set text(size: 0.9em)
   align(center)[
-    #block(fill: luma(250), inset: 1em, radius: 5pt, stroke: luma(220))[#it]
+    #block(fill: luma(250), inset: 1em, radius: 5pt, stroke: luma(220), width: 95%)[#align(left)[#it]]
   ]
 }
